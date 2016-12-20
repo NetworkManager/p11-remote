@@ -331,7 +331,7 @@ lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
             CK_FUNCTION_LIST ***pmodules)
 {
 	CK_FUNCTION_LIST **modules = NULL;
-	CK_FUNCTION_LIST *module;
+	CK_FUNCTION_LIST *module = NULL;
 	P11KitUri *uri = NULL;
 	int ret;
 	CK_RV rv;
