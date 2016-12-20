@@ -14,17 +14,17 @@ override CFLAGS += $(p11kit_CFLAGS)
 override CFLAGS += $(libcrypto_CFLAGS)
 override LDFLAGS += $(p11kit_LIBS)
 
-all: p11-kit.so
+all: libp11-kit.so
 
-p11-kit.so: engine.o
+libp11-kit.so: engine.o
 	$(CC) $(LDFLAGS) -shared -o $@ $<
 
 install:
 	mkdir -p $(DESTDIR)$(ENGINESDIR)
-	install p11-kit.so $(DESTDIR)$(ENGINESDIR)
+	install libp11-kit.so $(DESTDIR)$(ENGINESDIR)
 
 uninstall:
-	rm $(DESTDIR)$(ENGINESDIR)/p11-kit.so
+	rm $(DESTDIR)$(ENGINESDIR)/libp11-kit.so
 
 clean:
 	rm -f *.so *.o
