@@ -376,7 +376,7 @@ lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
 	pin_value = p11_kit_uri_get_pin_value (uri);
 	if (pin_value) {
 		rv = module->C_Login (*session, CKU_USER, (unsigned char *)pin_value, strlen (pin_value));
-		if (rv != CKR_OK) {
+		if (rv != CKR_OK && rv != CKR_USER_ALREADY_LOGGED_IN) {
 			fprintf (stderr, "C_Login: %s\n", p11_kit_strerror (rv));
 			goto logout;
 		}
