@@ -104,11 +104,54 @@ rsa_ex_free (void *parent, void *ptr, CRYPTO_EX_DATA *ad, int idx,
 /* RSA Callbacks. */
 
 static int
+rsa_padding_to_pkcs11_mechanism (int padding, CK_MECHANISM *mech)
+{
+	/* Ripped off from libp11. */
+	switch (padding) {
+	case RSA_PKCS1_PADDING:
+		mech->mechanism = CKM_RSA_PKCS;
+		break;
+	case RSA_NO_PADDING:
+		mech->mechanism = CKM_RSA_X_509;
+		break;
+	case RSA_X931_PADDING:
+		mech->mechanism = CKM_RSA_X9_31;
+		break;
+	default:
+		fprintf (stderr, "PKCS#11: Unsupported padding type\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+static int
 rsa_priv_dec (int flen, const unsigned char *from, unsigned char *to,
               RSA *rsa, int padding)
 {
-	fprintf (stderr, "Decryption not implemented.\n");
-	return 0;
+	struct rsa_ex *ex = RSA_get_ex_data (rsa, rsa_ex_idx);
+	CK_MECHANISM mech = { 0, };
+	CK_RV rv;
+	CK_ULONG tlen;
+
+	if (!rsa_padding_to_pkcs11_mechanism (padding, &mech))
+		return 0;
+
+	tlen = RSA_size (rsa);
+
+	rv = ex->module->C_DecryptInit (ex->session, &mech, ex->privkey);
+	if (rv != CKR_OK) {
+		fprintf (stderr, "C_DecryptInit: %s\n", p11_kit_strerror (rv));
+		return 0;
+	}
+
+	rv = ex->module->C_Decrypt (ex->session, (unsigned char *)from, flen, to, &tlen);
+	if (rv != CKR_OK) {
+		fprintf (stderr, "C_Decrypt: %s\n", p11_kit_strerror (rv));
+		return 0;
+	}
+
+	return tlen;
 }
 
 static int
@@ -120,21 +163,8 @@ rsa_priv_enc (int flen, const unsigned char *from, unsigned char *to,
 	CK_RV rv;
 	CK_ULONG tlen;
 
-	/* Ripped off from libp11. */
-	switch (padding) {
-	case RSA_PKCS1_PADDING:
-		mech.mechanism = CKM_RSA_PKCS;
-		break;
-	case RSA_NO_PADDING:
-		mech.mechanism = CKM_RSA_X_509;
-		break;
-	case RSA_X931_PADDING:
-		mech.mechanism = CKM_RSA_X9_31;
-		break;
-	default:
-		fprintf (stderr, "PKCS#11: Unsupported padding type\n");
+	if (!rsa_padding_to_pkcs11_mechanism (padding, &mech))
 		return 0;
-	}
 
 	tlen = RSA_size (rsa);
 
