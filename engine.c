@@ -434,8 +434,8 @@ error:
 }
 
 static EVP_PKEY *
-obj_to_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
-           CK_SESSION_HANDLE session, CK_OBJECT_HANDLE privkey)
+obj_to_rsa_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
+               CK_SESSION_HANDLE session, CK_OBJECT_HANDLE privkey)
 {
 	struct rsa_ex *ex = NULL;
 	RSA *rsa = NULL;
@@ -497,6 +497,32 @@ error:
 		RSA_free (rsa);
 	if (ex)
 		free (ex);
+	return NULL;
+}
+
+static EVP_PKEY *
+obj_to_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
+           CK_SESSION_HANDLE session, CK_OBJECT_HANDLE privkey)
+{
+	CK_KEY_TYPE type;
+	CK_ATTRIBUTE attrs[] = {
+		{
+			.type = CKA_KEY_TYPE,
+			.pValue = &type,
+			.ulValueLen = sizeof (type),
+		},
+	};
+	CK_RV rv;
+
+	rv = module->C_GetAttributeValue (session, privkey, attrs, 1);
+	if (rv != CKR_OK) {
+		fprintf (stderr, "C_GetAttributeValue: %s\n", p11_kit_strerror (rv));
+		return NULL;
+	}
+
+	if (type == CKK_RSA)
+		return obj_to_rsa_pk (modules, module, session, privkey);
+
 	return NULL;
 }
 
