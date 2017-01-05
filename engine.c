@@ -42,6 +42,8 @@
 #include <p11-kit/p11-kit.h>
 #include <p11-kit/uri.h>
 
+#include "openssl-compat.h"
+
 enum {
 	/* wpa_supplicant uses this to fetch the certificate from a token. */
 	LOAD_CERT_CTRL = ENGINE_CMD_BASE,
@@ -188,13 +190,6 @@ rsa_finish (RSA *rsa)
 {
 	return 0;
 }
-
-static RSA_METHOD rsa_method = {
-	.flags = 0,
-	.rsa_priv_enc = rsa_priv_enc,
-	.rsa_priv_dec = rsa_priv_dec,
-	.finish = rsa_finish,
-};
 
 /* Engine helpers. */
 
@@ -434,7 +429,7 @@ error:
 }
 
 static EVP_PKEY *
-obj_to_rsa_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
+obj_to_rsa_pk (ENGINE *engine, CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
                CK_SESSION_HANDLE session, CK_OBJECT_HANDLE privkey)
 {
 	struct rsa_ex *ex = NULL;
@@ -471,12 +466,11 @@ obj_to_rsa_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
 	ex->session = session;
 	ex->privkey = privkey;
 
-	rsa = RSA_new ();
+	rsa = RSA_new_method (engine);
 	if (rsa == NULL) {
 		fprintf (stderr, "RSA_new: %s\n", ERR_reason_error_string (ERR_get_error ()));
 		goto error;
 	}
-	RSA_set_method (rsa, &rsa_method);
 
 	pk = EVP_PKEY_new ();
 	if (pk == NULL) {
@@ -484,8 +478,13 @@ obj_to_rsa_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
 		goto error;
 	}
 
-	rsa->n = BN_bin2bn (attrs[0].pValue, attrs[0].ulValueLen, rsa->n);
-	rsa->e = BN_bin2bn (attrs[1].pValue, attrs[1].ulValueLen, rsa->e);
+	if (!RSA_set0_key (rsa,
+	                   BN_bin2bn (attrs[0].pValue, attrs[0].ulValueLen, NULL),
+	                   BN_bin2bn (attrs[1].pValue, attrs[1].ulValueLen, NULL),
+	                   NULL)) {
+		fprintf (stderr, "RSA_set0_key: failed to set public key components.\n");
+		goto error;
+	}
 
 	EVP_PKEY_set1_RSA (pk, rsa);
 	RSA_set_ex_data (rsa, rsa_ex_idx, ex);
@@ -501,7 +500,7 @@ error:
 }
 
 static EVP_PKEY *
-obj_to_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
+obj_to_pk (ENGINE *engine, CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
            CK_SESSION_HANDLE session, CK_OBJECT_HANDLE privkey)
 {
 	CK_KEY_TYPE type;
@@ -521,7 +520,7 @@ obj_to_pk (CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
 	}
 
 	if (type == CKK_RSA)
-		return obj_to_rsa_pk (modules, module, session, privkey);
+		return obj_to_rsa_pk (engine, modules, module, session, privkey);
 
 	return NULL;
 }
@@ -551,7 +550,7 @@ engine_load_privkey (ENGINE *engine, const char *s_key_id,
 	if (module == NULL)
 		return NULL;
 
-	pk = obj_to_pk (modules, module, session, privkey);
+	pk = obj_to_pk (engine, modules, module, session, privkey);
 	if (pk == NULL) {
 		rv = module->C_CloseSession (session);
 		if (rv != CKR_OK)
@@ -663,6 +662,7 @@ engine_ctrl (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
 static int
 bind (ENGINE *engine, const char *id)
 {
+	RSA_METHOD *rsa_method;
 	static const char *engine_id = "p11-kit";
 	static const char *engine_name = "p11-kit engine";
 	static const ENGINE_CMD_DEFN engine_cmds[] = {
@@ -679,9 +679,14 @@ bind (ENGINE *engine, const char *id)
 		}
 	};
 
-	rsa_method.name = OPENSSL_strdup ("p11-kit");
-	if (rsa_method.name == NULL) {
-		perror ("OPENSSL_strdup");
+	rsa_method = RSA_meth_dup (RSA_get_default_method ());
+	RSA_meth_set1_name (rsa_method, "p11-kit");
+	RSA_meth_set_priv_enc (rsa_method, rsa_priv_enc);
+	RSA_meth_set_priv_dec (rsa_method, rsa_priv_dec);
+	RSA_meth_set_finish (rsa_method, rsa_finish);
+
+	if (!ENGINE_set_RSA (engine, rsa_method)) {
+		printf ("ENGINE_set_RSA failed\n");
 		return 0;
 	}
 
@@ -727,11 +732,6 @@ bind (ENGINE *engine, const char *id)
 
 	if (!ENGINE_set_load_pubkey_function (engine, engine_load_pubkey)) {
 		printf ("ENGINE_set_load_pubkey_function failed\n");
-		return 0;
-	}
-
-	if (!ENGINE_set_RSA (engine, &rsa_method)) {
-		printf ("ENGINE_set_RSA failed\n");
 		return 0;
 	}
 
