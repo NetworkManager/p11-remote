@@ -361,7 +361,9 @@ lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
 	int ret;
 	CK_RV rv;
 	const char *pin_value;
+#ifdef HAVE_P11KIT_REMOTING
 	const char *p11_remote;
+#endif
 
 	uri = p11_kit_uri_new ();
 	if (!uri) {
@@ -375,6 +377,7 @@ lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
 		goto error;
 	}
 
+#ifdef HAVE_P11KIT_REMOTING
 	p11_remote = p11_kit_uri_get_p11_kit_remote (uri);
 	if (p11_remote) {
 		/* Load a remote module. */
@@ -389,6 +392,7 @@ lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
 			goto error;
 		}
 	} else {
+#endif
 		/* Pick a local module. */
 		modules = p11_kit_modules_load_and_initialize (0);
 		module = session_for_uri (modules, uri, session);
@@ -396,7 +400,9 @@ lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
 			fprintf (stderr, "No token matched\n");
 			goto error;
 		}
+#ifdef HAVE_P11KIT_REMOTING
 	}
+#endif
 
 	pin_value = p11_kit_uri_get_pin_value (uri);
 	if (pin_value) {
