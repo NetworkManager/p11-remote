@@ -9,11 +9,6 @@ PKG_CHECK_MODULES([P11KIT], [p11-kit-1])
 PKG_CHECK_MODULES([CRYPTO], [libcrypto])
 PKG_CHECK_MODULES([SYSTEMD], [systemd])
 
-save_cflags="$CFLAGS"
-AC_CHECK_FUNC([p11_kit_uri_get_p11_kit_remote],
-              AC_DEFINE([HAVE_P11KIT_REMOTING], [], [Define if p11-kit remoting API is available]))
-CFLAGS="$save_cflags"
-
 AC_ARG_WITH(libcrypto-enginesdir,
 	AS_HELP_STRING([--with-libcrypto-enginesdir=DIR], [the OpenSSL engine directory [default=determine automatically]]),
 	LIBCRYPTO_ENGINESDIR=$with_libcrypto_enginesdir,
@@ -31,6 +26,12 @@ AC_ARG_WITH(p11kit-proxy-module,
 	P11KIT_PROXY_MODULE=$with_p11kit_proxy_module,
 	P11KIT_PROXY_MODULE=$($PKG_CONFIG --define-variable=prefix='${prefix}' --variable=proxy_module p11-kit-1))
 AC_SUBST(P11KIT_PROXY_MODULE)
+
+AC_ARG_WITH(p11kit-p11-module_path,
+	AS_HELP_STRING([--with-p11kit-p11-module-path=DIR], [the PKCS#11 module path [default=determine automatically]]),
+	P11KIT_P11_MODULE_PATH=$with_p11kit_p11_module_path,
+	P11KIT_P11_MODULE_PATH=$($PKG_CONFIG --define-variable=prefix='${prefix}' --variable=p11_module_path p11-kit-1))
+AC_SUBST(P11KIT_P11_MODULE_PATH)
 
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES(Makefile)

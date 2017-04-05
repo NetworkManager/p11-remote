@@ -364,9 +364,6 @@ lookup_obj (const char *module_path, const char *uri_string,
 	int ret;
 	CK_RV rv;
 	const char *pin_value;
-#ifdef HAVE_P11KIT_REMOTING
-	const char *p11_remote;
-#endif
 
 	uri = p11_kit_uri_new ();
 	if (!uri) {
@@ -380,11 +377,22 @@ lookup_obj (const char *module_path, const char *uri_string,
 		goto error;
 	}
 
-#ifdef HAVE_P11KIT_REMOTING
-	p11_remote = p11_kit_uri_get_p11_kit_remote (uri);
-	if (p11_remote) {
-		/* Load a remote module. */
-		module = p11_kit_module_remote (p11_remote, 0);
+	if (module_path) {
+		if (module_path[0] == '/') {
+			module = p11_kit_module_load (module_path, 0);
+			if (!module) {
+				fprintf (stderr, "%s: %s\n", module_path, p11_kit_message ());
+				goto error;
+			}
+		} else {
+			/* Load a remote module. */
+			setenv ("P11_KIT_SERVER_ADDRESS", module_path, 1);
+			module = p11_kit_module_load (P11KIT_P11_MODULE_PATH "/p11-kit-client.so", 0);
+			if (!module) {
+				fprintf (stderr, "can't remote '%s': %s\n", module_path, p11_kit_message ());
+				goto error;
+			}
+		}
 		rv = p11_kit_module_initialize (module);
 		if (rv != CKR_OK) {
 			fprintf (stderr, "p11_kit_module_initialize: %s\n", p11_kit_strerror (rv));
@@ -395,7 +403,6 @@ lookup_obj (const char *module_path, const char *uri_string,
 			goto error;
 		}
 	} else {
-#endif
 		/* Pick a local module. */
 		modules = p11_kit_modules_load_and_initialize (0);
 		module = session_for_uri (modules, uri, session);
@@ -403,9 +410,7 @@ lookup_obj (const char *module_path, const char *uri_string,
 			fprintf (stderr, "No token matched\n");
 			goto error;
 		}
-#ifdef HAVE_P11KIT_REMOTING
 	}
-#endif
 
 	pin_value = p11_kit_uri_get_pin_value (uri);
 	if (pin_value) {

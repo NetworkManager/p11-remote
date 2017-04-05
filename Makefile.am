@@ -7,6 +7,8 @@ libcrypto_engines_LTLIBRARIES = \
 libp11_kit_engine_la_SOURCES = \
 	engine.c \
 	openssl-compat.h
+libp11_kit_engine_la_CPPFLAGS = \
+	-DP11KIT_P11_MODULE_PATH='"$(P11KIT_P11_MODULE_PATH)"'
 libp11_kit_engine_la_CFLAGS = \
 	$(P11KIT_CFLAGS) \
 	$(CRYPTO_CFLAGS)
@@ -50,6 +52,7 @@ EXTRA_DIST = \
 DISTCHECK_CONFIGURE_FLAGS = \
 	--with-libcrypto-enginesdir='$${prefix}/lib/p11-kit-proxy.so' \
 	--with-systemd-userunitdir='$${prefix}/lib/systemd/user' \
-	--with-p11kit-proxy-module='$${prefix}/lib/openssl/engines'
+	--with-p11kit-proxy-module='$${prefix}/lib/openssl/engines' \
+	--with-p11kit-p11-module-path='$${prefix}/lib/pkcs11'
 
 .DELETE_ON_ERROR:
