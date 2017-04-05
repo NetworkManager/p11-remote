@@ -20,8 +20,8 @@ p11tool --batch --login --label=Test-Server --write --load-privkey=$PRIVKEY "$TO
 
 # Perform encryption
 openssl <<EOF
-engine -t dynamic -pre SO_PATH:$PWD/.libs/libp11-kit.so -pre LIST_ADD:1 -pre LOAD
-rsautl -engine p11-kit -keyform engine -encrypt -inkey '$TOKEN;object=Test-Server;type=private;pin-value=' -in /etc/issue -out $PWD/test
+engine -t dynamic -pre SO_PATH:$PWD/.libs/libp11-kit-engine.so -pre LIST_ADD:1 -pre LOAD
+rsautl -engine pkcs11 -keyform engine -encrypt -inkey '$TOKEN;object=Test-Server;type=private;pin-value=' -in /etc/issue -out $PWD/test
 EOF
 
 # Drop the object from the token

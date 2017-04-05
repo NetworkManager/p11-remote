@@ -669,7 +669,7 @@ static int
 bind (ENGINE *engine, const char *id)
 {
 	RSA_METHOD *rsa_method;
-	static const char *engine_id = "p11-kit";
+	static const char *engine_id = "pkcs11";
 	static const char *engine_name = "p11-kit engine";
 	static const ENGINE_CMD_DEFN engine_cmds[] = {
 		{

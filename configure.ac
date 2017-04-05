@@ -1,4 +1,4 @@
-AC_INIT([p11-kit OpenSSL Engine], 0.1)
+AC_INIT([Remoting of PKCS#11 modules across sessions], 0.2, , p11-remote)
 AM_INIT_AUTOMAKE
 
 LT_INIT([disable-static])

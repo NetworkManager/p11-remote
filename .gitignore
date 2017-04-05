@@ -22,5 +22,5 @@ libtool
 ltmain.sh
 missing
 config.h*
-p11-kit-openssl-engine-*.tar.gz
+p11-remote-*.tar.gz
 stamp-h1

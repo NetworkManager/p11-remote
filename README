@@ -1,1 +1,16 @@
-This is a PKCS#11 engine for OpenSSL based on p11-kit.
+p11-remote
+==========
+
+This is a PKCS#11 engine for OpenSSL based on p11-kit capable of utilizing the
+p11-kit remoting capabilities. Please note that this engine module is
+experimental and is not up to the feature parity with libp11 based
+pkcs11_engine (which wpa_supplicant uses by default). It might be possible to
+extend the pkcs11_engine to include the remoting functionality. In that case
+this module will be rendered obsolete.
+
+It also includes an on-demand activated UNIX socket based p11-kit server for
+user sessions.
+
+This is in particular useful to use a GNOME Keyring software HSM with daemons
+running outside the user session, such as the NetworkManager managed VPN
+daemons or wpa_supplicant.
