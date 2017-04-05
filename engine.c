@@ -692,7 +692,7 @@ bind (ENGINE *engine, const char *id)
 	RSA_meth_set_finish (rsa_method, rsa_finish);
 
 	if (!ENGINE_set_RSA (engine, rsa_method)) {
-		printf ("ENGINE_set_RSA failed\n");
+		fprintf (stderr, "ENGINE_set_RSA failed\n");
 		return 0;
 	}
 
@@ -702,42 +702,42 @@ bind (ENGINE *engine, const char *id)
 	}
 
 	if (!ENGINE_set_name (engine, engine_name)) {
-		printf ("ENGINE_set_name failed\n");
+		fprintf (stderr, "ENGINE_set_name failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_init_function (engine, engine_init)) {
-		printf ("ENGINE_set_init_function failed\n");
+		fprintf (stderr, "ENGINE_set_init_function failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_destroy_function (engine, engine_destroy)) {
-		printf ("ENGINE_set_destroy_function failed\n");
+		fprintf (stderr, "ENGINE_set_destroy_function failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_finish_function (engine, engine_finish)) {
-		printf ("ENGINE_set_finish_function failed\n");
+		fprintf (stderr, "ENGINE_set_finish_function failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_cmd_defns (engine, engine_cmds)) {
-		printf ("ENGINE_set_cmd_defns failed\n");
+		fprintf (stderr, "ENGINE_set_cmd_defns failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_ctrl_function (engine, engine_ctrl)) {
-		printf ("ENGINE_set_ctrl_function failed\n");
+		fprintf (stderr, "ENGINE_set_ctrl_function failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_load_privkey_function (engine, engine_load_privkey)) {
-		printf ("ENGINE_set_load_privkey_function failed\n");
+		fprintf (stderr, "ENGINE_set_load_privkey_function failed\n");
 		return 0;
 	}
 
 	if (!ENGINE_set_load_pubkey_function (engine, engine_load_pubkey)) {
-		printf ("ENGINE_set_load_pubkey_function failed\n");
+		fprintf (stderr, "ENGINE_set_load_pubkey_function failed\n");
 		return 0;
 	}
 
