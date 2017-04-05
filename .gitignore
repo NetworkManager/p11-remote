@@ -23,4 +23,5 @@ ltmain.sh
 missing
 config.h*
 p11-remote-*.tar.gz
+p11-kit-remote@.service
 stamp-h1

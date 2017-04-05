@@ -1,0 +1,21 @@
+.TH P11\-KIT\-REMOTE.SOCKET 5 2017\-04\-09 p11\-remote
+.SH NAME
+p11\-kit\-remote.socket \- PKCS#11 remoting socket
+.SH SYNOPSIS
+.B p11\-kit\-remote.socket
+.SH DESCRIPTION
+A socket that provides access to PKCS#11 tokens available in the user session.
+.SH FILES
+.PD 0
+.TP
+\fI$XDG_USER_DIR\fR/\fIp11-kit/pkcs11\fR
+The socket address.
+.TP
+.I /usr/lib/p11\-kit\-proxy.so
+The p11-kit proxy module that is exported via this socket.
+.SH SEE ALSO
+.BR libp11-kit-engine.so (1),
+.BR p11\-kit\-remote@.service (5),
+.BR p11\-kit (8)
+.SH AUTHORS
+Lubomir Rintel

@@ -1,0 +1,10 @@
+[Unit]
+Description=PKCS#11 Remote Access
+Requires=p11-kit-remote.socket
+Documentation=man:p11-kit-remote@.service(5)
+
+[Service]
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+ExecStart=@bindir@/p11-kit remote @p11kit_proxy_module@
