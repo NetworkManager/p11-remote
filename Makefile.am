@@ -1,4 +1,4 @@
-enginesdir = $(P11KIT_ENGINESDIR)
+libcrypto_enginesdir = $(LIBCRYPTO_ENGINESDIR)
 
 libcrypto_engines_LTLIBRARIES = \
 	libp11-kit-engine.la
@@ -17,3 +17,6 @@ libp11_kit_engine_la_LDFLAGS = \
 	-avoid-version \
 	$(P11KIT_LDFLAGS) \
 	$(CRYPTO_LDFLAGS)
+
+DISTCHECK_CONFIGURE_FLAGS = \
+	--with-libcrypto-enginesdir='$${prefix}/lib/p11-kit-proxy.so'

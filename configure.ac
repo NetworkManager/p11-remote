@@ -13,8 +13,11 @@ AC_CHECK_FUNC([p11_kit_uri_get_p11_kit_remote],
               AC_DEFINE([HAVE_P11KIT_REMOTING], [], [Define if p11-kit remoting API is available]))
 CFLAGS="$save_cflags"
 
-P11KIT_ENGINESDIR=$($PKG_CONFIG --define-variable=prefix='${prefix}' --variable=enginesdir libcrypto)
-AC_SUBST(P11KIT_ENGINESDIR)
+AC_ARG_WITH(libcrypto-enginesdir,
+	AS_HELP_STRING([--with-libcrypto-enginesdir=DIR], [the OpenSSL engine directory [default=determine automatically]]),
+	LIBCRYPTO_ENGINESDIR=$with_libcrypto_enginesdir,
+	LIBCRYPTO_ENGINESDIR=$($PKG_CONFIG --define-variable=prefix='${prefix}' --variable=enginesdir libcrypto))
+AC_SUBST(LIBCRYPTO_ENGINESDIR)
 
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES(Makefile)
