@@ -40,6 +40,18 @@ engine -t -pre SO_PATH:$PWD/.libs/libp11-kit-engine.so -pre LIST_ADD:1 -pre LOAD
 rsautl -engine pkcs11 -keyform engine -encrypt -inkey '$TOKEN;object=Test-Server;type=private;pin-value=' -in /etc/issue -out $PWD/test
 EOF
 
+# Perform encryption using a particular module
+do_check <<EOF
+engine -t -pre SO_PATH:$PWD/.libs/libp11-kit-engine.so -pre LIST_ADD:1 -pre LOAD -post MODULE_PATH:$(pkg-config --variable=p11_module_path p11-kit-1)/gnome-keyring-pkcs11.so dynamic
+rsautl -engine pkcs11 -keyform engine -encrypt -inkey '$TOKEN;object=Test-Server;type=private;pin-value=' -in /etc/issue -out $PWD/test
+EOF
+
+# Perform encryption using p11-kit remoting
+do_check env -i <<EOF
+engine -t -pre SO_PATH:$PWD/.libs/libp11-kit-engine.so -pre LIST_ADD:1 -pre LOAD -post MODULE_PATH:unix:path=$XDG_RUNTIME_DIR/p11-kit/pkcs11 dynamic
+rsautl -engine pkcs11 -keyform engine -encrypt -inkey '$TOKEN;object=Test-Server;type=private;pin-value=' -in /etc/issue -out $PWD/test
+EOF
+
 # Drop the object from the token
 p11tool --batch --login --delete "$TOKEN;object=Test-Server" 2>/dev/null || :
 

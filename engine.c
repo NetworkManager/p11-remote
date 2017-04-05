@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Red Hat, Inc.
+ * Copyright (C) 2016,2017 Red Hat, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,6 +47,8 @@
 enum {
 	/* wpa_supplicant uses this to fetch the certificate from a token. */
 	LOAD_CERT_CTRL = ENGINE_CMD_BASE,
+	/* wpas_supplicant uses this to indicate the module client asked for. */
+	MODULE_PATH,
 };
 
 /* Engine-specific RSA private data. */
@@ -188,7 +190,7 @@ rsa_priv_enc (int flen, const unsigned char *from, unsigned char *to,
 static int
 rsa_finish (RSA *rsa)
 {
-	return 0;
+	return 1;
 }
 
 /* Engine helpers. */
@@ -351,7 +353,8 @@ session_for_uri (CK_FUNCTION_LIST **modules, P11KitUri *uri, CK_SESSION_HANDLE *
 }
 
 static CK_FUNCTION_LIST *
-lookup_obj (const char *uri_string, CK_OBJECT_CLASS class,
+lookup_obj (const char *module_path, const char *uri_string,
+            CK_OBJECT_CLASS class,
             CK_SESSION_HANDLE *session, CK_OBJECT_HANDLE *obj,
             CK_FUNCTION_LIST ***pmodules)
 {
@@ -533,6 +536,12 @@ obj_to_pk (ENGINE *engine, CK_FUNCTION_LIST **modules, CK_FUNCTION_LIST *module,
 
 /* Engine callbacks. */
 
+static int engine_ex_idx;
+
+struct engine_ex {
+	char *module_path;
+};
+
 static EVP_PKEY *
 engine_load_pubkey (ENGINE *engine, const char *s_key_id,
                     UI_METHOD *ui_method, void *callback_data)
@@ -545,6 +554,7 @@ static EVP_PKEY *
 engine_load_privkey (ENGINE *engine, const char *s_key_id,
                      UI_METHOD *ui_method, void *callback_data)
 {
+	struct engine_ex *ex = ENGINE_get_ex_data (engine, engine_ex_idx);
 	EVP_PKEY *pk;
 	CK_FUNCTION_LIST **modules;
 	CK_FUNCTION_LIST *module;
@@ -552,7 +562,8 @@ engine_load_privkey (ENGINE *engine, const char *s_key_id,
 	CK_OBJECT_HANDLE privkey;
 	CK_RV rv;
 
-	module = lookup_obj (s_key_id, CKO_PRIVATE_KEY, &session, &privkey, &modules);
+	module = lookup_obj (ex->module_path, s_key_id, CKO_PRIVATE_KEY,
+	                     &session, &privkey, &modules);
 	if (module == NULL)
 		return NULL;
 
@@ -577,6 +588,15 @@ engine_init (ENGINE *engine)
 static int
 engine_destroy (ENGINE *engine)
 {
+	struct engine_ex *ex = ENGINE_get_ex_data (engine, engine_ex_idx);
+
+	if (!ex)
+		return 1;
+
+	if (ex->module_path)
+		free (ex->module_path);
+	free (ex);
+
 	return 1;
 }
 
@@ -627,6 +647,7 @@ obj_to_cert (CK_FUNCTION_LIST *module, CK_SESSION_HANDLE session,
 static int
 load_cert_ctrl (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
 {
+	struct engine_ex *ex = ENGINE_get_ex_data (engine, engine_ex_idx);
 	struct {
 		const char *uri_string;
 		X509 *cert;
@@ -637,7 +658,8 @@ load_cert_ctrl (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
 	CK_OBJECT_HANDLE certificate;
 	CK_RV rv;
 
-	module = lookup_obj (params->uri_string, CKO_CERTIFICATE, &session, &certificate, &modules);
+	module = lookup_obj (ex->module_path, params->uri_string, CKO_CERTIFICATE,
+	                     &session, &certificate, &modules);
 	if (module == NULL)
 		return 0;
 
@@ -652,11 +674,31 @@ load_cert_ctrl (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
 }
 
 static int
+module_path (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
+{
+	struct engine_ex *ex = ENGINE_get_ex_data (engine, engine_ex_idx);
+	const char *module_path = p;
+
+	if (!ex) {
+		fprintf (stderr, "MODULE_PATH:%s: Engine not bound\n", module_path);
+		return 0;
+	}
+
+	if (ex->module_path)
+		free (ex->module_path);
+	ex->module_path = strdup (module_path);
+
+	return 1;
+}
+
+static int
 engine_ctrl (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
 {
 	switch (cmd) {
 	case LOAD_CERT_CTRL:
 		return load_cert_ctrl (engine, cmd, i, p, f);
+	case MODULE_PATH:
+		return module_path (engine, cmd, i, p, f);
 	default:
 		abort ();
 	}
@@ -668,6 +710,7 @@ engine_ctrl (ENGINE *engine, int cmd, long i, void *p, void (*f) ())
 static int
 bind (ENGINE *engine, const char *id)
 {
+	struct engine_ex *ex;
 	RSA_METHOD *rsa_method;
 	static const char *engine_id = "pkcs11";
 	static const char *engine_name = "p11-kit engine";
@@ -677,6 +720,11 @@ bind (ENGINE *engine, const char *id)
 			.cmd_name = "LOAD_CERT_CTRL",
 			.cmd_desc = "Load a certificate",
 			.cmd_flags = ENGINE_CMD_FLAG_INTERNAL,
+		}, {
+			.cmd_num = MODULE_PATH,
+			.cmd_name = "MODULE_PATH",
+			.cmd_desc = "Specify a PKCS#11 module",
+			.cmd_flags = ENGINE_CMD_FLAG_STRING,
 		}, {
 			.cmd_num = 0,
 			.cmd_name = NULL,
@@ -741,7 +789,18 @@ bind (ENGINE *engine, const char *id)
 		return 0;
 	}
 
-	rsa_ex_idx = RSA_get_ex_new_index (0, NULL, NULL, NULL, rsa_ex_free);
+	if (!rsa_ex_idx)
+		rsa_ex_idx = RSA_get_ex_new_index (0, NULL, NULL, NULL, rsa_ex_free);
+	if (!engine_ex_idx)
+		engine_ex_idx = ENGINE_get_ex_new_index (0, "p11-kit", NULL, NULL, NULL);
+
+	ex = calloc (sizeof (struct engine_ex), 1);
+	if (ex == NULL) {
+		perror ("calloc");
+		return 0;
+	}
+	ENGINE_set_ex_data (engine, engine_ex_idx, ex);
+
 	return 1;
 }
 

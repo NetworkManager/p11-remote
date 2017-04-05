@@ -10,10 +10,37 @@ libp11\-kit\-remote.so \- PKCS#11 OpenSSL engine based on p11\-kit
 \fI\,LIST_ADD\fR\,:1
 .B \-pre
 .I LOAD
+.br
+.B openssl engine
+.B \-t
+.B \-pre
+\fI\,SO_PATH\fR\,:libp11\-kit\-engine.so
+.B \-pre
+\fI\,LIST_ADD\fR\,:1
+.B \-pre
+.I LOAD
+.B \-pre
+\fI\,MODULE_PATH\fR\,:/usr/lib/pkcs11/gnome\-keyring\-pkcs11.so dynamic
+.br
+.B openssl engine
+.B \-t
+.B \-pre
+\fI\,SO_PATH\fR\,:libp11\-kit\-engine.so
+.B \-pre
+\fI\,LIST_ADD\fR\,:1
+.B \-pre
+.I LOAD
+.B \-pre
+\fI\,MODULE_PATH\fR\,:unix:path=$XDG_RUNTIME_DIR/p11\-kit/pkcs11
 .SH DESCRIPTION
 This is a PKCS#11 engine for OpenSSL based on p11\-kit that is capable of
 utilizing the p11\-kit remoting capabilities.
 .SH COMMANDS
+.TP
+.BR MODULE_PATH
+This sets the PKCS#11 module to use. If it starts with a "/" it is assumed to
+be an absolute file path of a PKCS#11 module, otherwise it specifies a remote
+token specified using the same format the "remote" key in pkcs11.conf uses.
 .TP
 .BR LOAD_CERT_CTRL
 This command is used by wpa_supplicant to load a certificate from a
