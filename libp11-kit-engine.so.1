@@ -1,0 +1,51 @@
+.TH LIBP11\-KIT\-REMOTE.SO 8 2017\-04\-09 p11\-remote
+.SH NAME
+libp11\-kit\-remote.so \- PKCS#11 OpenSSL engine based on p11\-kit
+.SH SYNOPSIS
+.B openssl engine
+.B \-t
+.B \-pre
+\fI\,SO_PATH\fR\,:libp11\-kit\-engine.so
+.B \-pre
+\fI\,LIST_ADD\fR\,:1
+.B \-pre
+.I LOAD
+.SH DESCRIPTION
+This is a PKCS#11 engine for OpenSSL based on p11\-kit that is capable of
+utilizing the p11\-kit remoting capabilities.
+.SH COMMANDS
+.TP
+.BR LOAD_CERT_CTRL
+This command is used by wpa_supplicant to load a certificate from a
+.I CKA_VALUE
+attribute of a
+.I CKO_CERTIFICATE
+PKCS#11 object. It accepts the argument in form of a following structure:
+.IP
+.EX
+  struct {
+      const char *uri_string;
+      X509 *cert;
+  } *params = p;
+.EE
+.SH FILES
+.PD 0
+.TP
+.I /usr/lib/openssl/engines/libp11\-kit\-engine.so
+The OpenSSL engine.
+.TP
+.I /usr/lib/pkcs11/p11\-kit\-client.so
+The p11\-kit remoting module that is used to access remote tokens.
+.SH NOTES
+This engine module is
+experimental and is not up to the feature parity with libp11 based
+pkcs11_engine (which wpa_supplicant uses by default). It might be possible to
+extend the pkcs11_engine to include the remoting functionality. In that case
+this module will be rendered obsolete.
+.SH SEE ALSO
+.BR pkcs11.conf (1),
+.BR p11\-kit (8),
+.BR engine (3),
+.BR wpa_supplicant (8)
+.SH AUTHORS
+Lubomir Rintel
