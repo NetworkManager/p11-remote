@@ -50,9 +50,9 @@ EXTRA_DIST = \
 	p11-kit-remote@.service.in
 
 DISTCHECK_CONFIGURE_FLAGS = \
-	--with-libcrypto-enginesdir='$${prefix}/lib/p11-kit-proxy.so' \
+	--with-libcrypto-enginesdir='$${prefix}/lib/openssl/engines' \
 	--with-systemd-userunitdir='$${prefix}/lib/systemd/user' \
-	--with-p11kit-proxy-module='$${prefix}/lib/openssl/engines' \
+	--with-p11kit-proxy-module='$${prefix}/lib/p11-kit-proxy.so' \
 	--with-p11kit-p11-module-path='$${prefix}/lib/pkcs11'
 
 .DELETE_ON_ERROR:
