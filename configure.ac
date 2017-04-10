@@ -1,4 +1,4 @@
-AC_INIT([Remoting of PKCS#11 modules across sessions], 0.2, , p11-remote)
+AC_INIT([Remoting of PKCS#11 modules across sessions], 0.3, , p11-remote)
 AM_INIT_AUTOMAKE
 
 LT_INIT([disable-static])
