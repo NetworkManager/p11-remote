@@ -29,12 +29,17 @@ p11-kit-remote@.service: p11-kit-remote@.service.in
 	$(AM_V_GEN) sed -e 's|@bindir[@]|$(bindir)|g' \
 			-e 's|@p11kit_proxy_module[@]|$(P11KIT_PROXY_MODULE)|g' $< >$@
 
+install-exec-hook:
+	$(MKDIR_P) $(DESTDIR)$(libdir) $(DESTDIR)$(LIBCRYPTO_ENGINESDIR)
+	$(LN_S) -f "$$(realpath --relative-to=$(DESTDIR)$(libdir) $(DESTDIR)$(LIBCRYPTO_ENGINESDIR)/libp11-kit-engine.so)" \
+		$(DESTDIR)$(libdir)/libp11-kit-engine.so
+
 install-data-hook:
 	$(MKDIR_P) $(DESTDIR)$(systemd_userunitdir)/sockets.target.wants
 	$(LN_S) -f ../p11-kit-remote.socket $(DESTDIR)$(systemd_userunitdir)/sockets.target.wants/p11-kit-remote.socket
 
-uninstall-local:
-	rm -f $(DESTDIR)$(systemd_userunitdir)/sockets.target.wants/p11-kit-remote.socket
+uninstall-hook:
+	rm -f $(DESTDIR)$(libdir)/libp11-kit-engine.so $(DESTDIR)$(systemd_userunitdir)/sockets.target.wants/p11-kit-remote.socket
 
 CLEANFILES = \
 	p11-kit-remote@.service
